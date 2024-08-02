@@ -1,0 +1,143 @@
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Auto-generated files
+*.sln
+*.csproj
+*.dbmdl
+*.jfm
+*.pdb
+*.opendb
+*.VC.db
+*.nupkg
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Include if using Visual Studio
+.vscode/
+.vscode-test/
+
+# OS generated files
+.DS_Store
+._*
+*.swp
+[Tt]humbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Windows image file caches
+*.tif
+*.tiff
+
+# Folder config file
+*.directory
+
+# Recycle Bin used on file shares
+*.~lock.*#
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+*.bak
+*.bk
+*.old
+*.orig
+*.sublime-project
+*.sublime-workspace
+
+# Archive files
+*.zip
+*.7z
+*.tar
+*.gz
+*.rar
+*.tar.gz
+*.tgz
+*.bzip2
+*.bz2
+*.xz
+
+# Web
+publish/
+*.publishsettings
+*.pubxml
+*.publishproj
+
+# Logs
+*.log
+*.out
+*.err
+
+# Configuration files
+appsettings*.json
+secrets.json
+
+# Entity Framework
+migrations/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# npm packages
+node_modules/
+
+# yarn packages
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Client-side build
+dist/
+tmp/
+out-tsc/
+temp/
+
+# VS Code
+.vscode/
+
+# Local history
+.localhistory/
+
+# Rider
+.idea/
+.idea_modules/
+.idea_httpRequests/
+.idea/workspace.xml
+.idea/artifacts
+.idea/libraries
+
+# DotNet
+.vscode/
+*.bkp
+
+# Additional files/directories
+*.swp
+*.bak
+*.old
+*.orig
+*.tmp
+*.temp
+~$*
