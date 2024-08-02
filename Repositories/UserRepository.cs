@@ -10,7 +10,7 @@ namespace api.Interfaces
 {
     public interface IUserRepository
     {
-        public Task<User?> LoginUserAsync(LoginDTO loginDTO);
+        public Task<User> LoginUserAsync(LoginDTO loginDTO);
         public Task<User> RegisterUserAsync(RegisterDTO registerDTO);
         public Task SetUserVerificationAsync(String Email, bool IsVerified);
     }
@@ -28,12 +28,16 @@ namespace api.Repositories
             _context = context;
             _logger = logger;
         }
-        public async Task<User?> LoginUserAsync(LoginDTO login)
+        public async Task<User> LoginUserAsync(LoginDTO login)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == login.Email);
             if (user == null || BcryptUtil.VerifyPassword(login.Password!, user.Password) == false)
             {
-                return null;
+                throw new UserNotExistException();
+            }
+            else if (user.IsVerified == false)
+            {
+                throw new UserNotVerifiedException();
             }
             return user;
         }

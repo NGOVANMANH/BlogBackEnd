@@ -9,7 +9,7 @@ namespace api.Interfaces
     public interface IAuthService
     {
         Task RegisterUserAsync(RegisterDTO registerDTO);
-        Task LoginUserAsync(LoginDTO loginDTO);
+        Task<UserDTO> LoginUserAsync(LoginDTO loginDTO);
         Task<Boolean> ConfirmEmailAsync(EmailConfirmationDTO emailConfirmationDTO);
     }
 }
@@ -61,11 +61,21 @@ namespace api.Services
             }
         }
 
-        public async Task LoginUserAsync(LoginDTO loginDTO)
+        public async Task<UserDTO> LoginUserAsync(LoginDTO loginDTO)
         {
             try
             {
-                await _userRepository.LoginUserAsync(loginDTO);
+                var user = await _userRepository.LoginUserAsync(loginDTO);
+                return new UserDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Birthdate = user.Birthdate,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                };
+
             }
             catch (Exception)
             {

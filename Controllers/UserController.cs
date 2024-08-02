@@ -58,52 +58,52 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> LoginUserAsync(LoginDTO loginDTO)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid data",
-                    new
-                    {
-                        errors = ModelStateUtil.FormatModelStateErrors(ModelState)
-                    }
-                    ));
-        }
-        var user = await _userService.LoginUserAsync(loginDTO);
-        if (user == null)
-        {
-            return Unauthorized(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid credentials"
-                    ));
-        }
+    // [HttpPost("login")]
+    // public async Task<IActionResult> LoginUserAsync(LoginDTO loginDTO)
+    // {
+    //     if (!ModelState.IsValid)
+    //     {
+    //         return BadRequest(
+    //             new ApiResponseDTO(
+    //                 false,
+    //                 "Invalid data",
+    //                 new
+    //                 {
+    //                     errors = ModelStateUtil.FormatModelStateErrors(ModelState)
+    //                 }
+    //                 ));
+    //     }
+    //     var user = await _userService.LoginUserAsync(loginDTO);
+    //     if (user == null)
+    //     {
+    //         return Unauthorized(
+    //             new ApiResponseDTO(
+    //                 false,
+    //                 "Invalid credentials"
+    //                 ));
+    //     }
 
-        var accessToken = _tokenService.GenerateAccessToken(user);
-        var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id);
+    //     var accessToken = _tokenService.GenerateAccessToken(user);
+    //     var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id);
 
-        Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            SameSite = SameSiteMode.None,
-            Secure = false,
-            Expires = DateTime.UtcNow.AddDays(7)
-        });
+    //     Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+    //     {
+    //         HttpOnly = true,
+    //         SameSite = SameSiteMode.None,
+    //         Secure = false,
+    //         Expires = DateTime.UtcNow.AddDays(7)
+    //     });
 
-        return Ok(new ApiResponseDTO(
-            true,
-            "User logged in successfully",
-            new LoginResponseDTO
-            {
-                User = user,
-                AccessToken = accessToken
-            }
-            ));
-    }
+    //     return Ok(new ApiResponseDTO(
+    //         true,
+    //         "User logged in successfully",
+    //         new LoginResponseDTO
+    //         {
+    //             User = user,
+    //             AccessToken = accessToken
+    //         }
+    //         ));
+    // }
 
     // [HttpGet("2fa")]
     // public IActionResult GetTwoFactorAuthenticationAsync()
@@ -121,27 +121,6 @@ public class UserController : ControllerBase
     //         }
     //         ));
     // }
-
-    [HttpGet("verify-email")]
-    public async Task<IActionResult> VerifyEmailAsync([FromQuery] string token)
-    {
-        try
-        {
-            await _emailService.VerifyEmailAsync(token);
-            return Ok(new ApiResponseDTO(
-                true,
-                "Email verified successfully"
-                ));
-        }
-        catch (Exception e)
-        {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    e.Message
-                    ));
-        }
-    }
 
     // [HttpGet("profile/{id}")]
     // [Authorize]

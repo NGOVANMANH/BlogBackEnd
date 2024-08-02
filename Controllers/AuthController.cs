@@ -11,11 +11,13 @@ namespace api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ITokenService _tokenService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, ITokenService tokenService, ILogger<AuthController> logger)
     {
         _authService = authService;
+        _tokenService = tokenService;
         _logger = logger;
     }
 
@@ -68,13 +70,33 @@ public class AuthController : ControllerBase
 
         try
         {
-            await _authService.LoginUserAsync(loginDTO);
-            return Ok(new ApiResponseDTO(true, "Login successful"));
-        }
-        catch (System.Exception)
-        {
+            var user = await _authService.LoginUserAsync(loginDTO);
 
-            throw;
+            var accessToken = _tokenService.GenerateAccessToken(user);
+            var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id);
+
+            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                Secure = false,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(new ApiResponseDTO(true, "Login successful", new { user, accessToken }));
+        }
+        catch (UserNotExistException e)
+        {
+            return BadRequest(new ApiResponseDTO(false, e.Message));
+        }
+        catch (UserNotVerifiedException e)
+        {
+            return BadRequest(new ApiResponseDTO(false, e.Message));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while logging in"));
         }
     }
 
