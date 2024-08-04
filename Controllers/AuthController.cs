@@ -85,7 +85,7 @@ public class AuthController : ControllerBase
 
             return Ok(new ApiResponseDTO(true, "Login successful", new { user, accessToken }));
         }
-        catch (UserNotExistException e)
+        catch (UserNotExistException)
         {
             return BadRequest(new ApiResponseDTO(false, "Email or password is incorrect"));
         }

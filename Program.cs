@@ -1,8 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using api.Data;
 using api.DTOs;
 using api.Interfaces;
+using api.Middlewares;
 using api.Repositories;
 using api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -114,6 +114,8 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IVerifyInformationRepository, VerifyInformationRepository>();
 
+builder.Services.AddSingleton<WsHandler>();
+
 // App building
 var app = builder.Build();
 
@@ -130,6 +132,8 @@ app.UseWebSockets(new WebSocketOptions
 {
     KeepAliveInterval = TimeSpan.FromSeconds(120)
 });
+
+app.UseMiddleware<WebSocketMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
