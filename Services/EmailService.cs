@@ -10,6 +10,7 @@ namespace api.Interfaces
     {
         Task SendEmailAsync(string email, string subject, string message);
         Task SendEmailVerificationAsync(VerifyInformation verifyInformation);
+        Task SendOTPAsync(VerifyInformation verifyInformation);
     }
 }
 
@@ -53,7 +54,13 @@ namespace api.Services
 
             var emailBody = HtmlTemplate.GetEmailVerificationTemplate(verificationUrl);
 
-            await SendEmailAsync(verifyInformation.Email, "Xác Thực Email", emailBody);
+            await SendEmailAsync(verifyInformation.Email, "Verify Email", emailBody);
+        }
+
+        public async Task SendOTPAsync(VerifyInformation verifyInformation)
+        {
+            var emailBody = HtmlTemplate.GetOTPEmailTemplate(verifyInformation.OTP!);
+            await SendEmailAsync(verifyInformation.Email, "OTP", emailBody);
         }
     }
 }

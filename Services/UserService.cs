@@ -32,9 +32,9 @@ namespace api.Services
                     Id = user.Id,
                     Username = user.Username,
                     Email = user.Email,
-                    Birthdate = user.Birthdate,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName
+                    Birthdate = user.Birthdate!,
+                    FirstName = user.FirstName!,
+                    LastName = user.LastName!
                 };
             }
             else
@@ -54,8 +54,8 @@ namespace api.Services
                     Username = returnedUser.Username,
                     Email = returnedUser.Email,
                     Birthdate = returnedUser.Birthdate,
-                    FirstName = returnedUser.FirstName,
-                    LastName = returnedUser.LastName
+                    FirstName = returnedUser.FirstName!,
+                    LastName = returnedUser.LastName!
                 };
             }
             catch (Exception e)

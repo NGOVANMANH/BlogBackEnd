@@ -1,7 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using api.DTOs;
 using api.Interfaces;
@@ -13,6 +11,7 @@ namespace api.Interfaces
     {
         public string GenerateAccessToken(UserDTO user);
         public Task<string> GenerateRefreshTokenAsync(int userId);
+        public Task<UserDTO> VerifyRefreshTokenAsync(string token);
     }
 }
 
@@ -53,6 +52,27 @@ namespace api.Services
         {
             var refreshToken = await _refreshTokenRepository.CreateRefreshTokenAsync(userId);
             return refreshToken.Token;
+        }
+
+        public async Task<UserDTO> VerifyRefreshTokenAsync(string token)
+        {
+            try
+            {
+                var user = await _refreshTokenRepository.VerifyRefreshTokenAsync(token);
+                return new UserDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Birthdate = user.Birthdate,
+                    FirstName = user.FirstName!,
+                    LastName = user.LastName!
+                };
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

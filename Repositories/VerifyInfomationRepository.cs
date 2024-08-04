@@ -11,6 +11,7 @@ namespace api.Interfaces
     {
         Task<VerifyInformation> CreateVerifyInformationAsync(VerifyInformation verifyInformation);
         Task<Boolean> VerifyInformationAsync(EmailConfirmationDTO emailConfirmationDTO);
+        Task<User> VerifyOTPAsync(ForgotPasswordDTO forgotPasswordDTO);
     }
 }
 
@@ -53,12 +54,12 @@ namespace api.Repositories
 
                 if (existingVerifyInformation == null)
                 {
-                    throw new VerifyTokenInvalidException();
+                    throw new TokenInvalidException();
                 }
 
                 if (existingVerifyInformation.VerifyTokenExpiry < DateTime.UtcNow)
                 {
-                    throw new VerifyTokenExpiredException();
+                    throw new TokenExpiredException();
                 }
 
                 existingVerifyInformation.VerifyToken = null;
@@ -71,6 +72,23 @@ namespace api.Repositories
             {
                 throw new Exception(e.Message);
             }
+        }
+
+        public async Task<User> VerifyOTPAsync(ForgotPasswordDTO forgotPasswordDTO)
+        {
+            var existingVerifyInformation = await _context.VerifyInformations
+                .FirstOrDefaultAsync(v => v.Email == forgotPasswordDTO.Email && v.OTP == forgotPasswordDTO.OTP);
+
+            if (existingVerifyInformation == null)
+            {
+                throw new UserNotExistException();
+            }
+            if (existingVerifyInformation.OTPExpiry < DateTime.UtcNow)
+            {
+                throw new TokenExpiredException();
+            }
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == forgotPasswordDTO.Email);
+            return user!;
         }
     }
 }

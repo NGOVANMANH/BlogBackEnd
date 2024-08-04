@@ -87,7 +87,7 @@ public class AuthController : ControllerBase
         }
         catch (UserNotExistException e)
         {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
+            return BadRequest(new ApiResponseDTO(false, "Email or password is incorrect"));
         }
         catch (UserNotVerifiedException e)
         {
@@ -113,6 +113,8 @@ public class AuthController : ControllerBase
                         new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
             }
 
+            confirmEmailReqDTO.VerifyToken = confirmEmailReqDTO.VerifyToken.Replace(" ", "+");
+
             try
             {
                 await _authService.ConfirmEmailAsync(new EmailConfirmationDTO
@@ -124,11 +126,11 @@ public class AuthController : ControllerBase
                 var htmlContent = HtmlTemplate.ThanksForConfirmingEmail;
                 return Content(htmlContent, "text/html");
             }
-            catch (VerifyTokenInvalidException e)
+            catch (TokenInvalidException e)
             {
                 return BadRequest(new ApiResponseDTO(false, e.Message));
             }
-            catch (VerifyTokenExpiredException e)
+            catch (TokenExpiredException e)
             {
                 return BadRequest(new ApiResponseDTO(false, e.Message));
             }
@@ -137,6 +139,138 @@ public class AuthController : ControllerBase
                 _logger.LogError(e, e.Message);
                 return StatusCode(500, new ApiResponseDTO(false, "An error occurred while confirming the email"));
             }
+        }
+    }
+
+    [HttpPost("resend-confirm-email")]
+    public async Task<IActionResult> ResendConfirmationEmailAsync(ResendConfirmationEmailDTO resendConfirmationEmailDTO)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(
+                new ApiResponseDTO(
+                    false,
+                    "Invalid data",
+                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
+        }
+
+        try
+        {
+            await _authService.ResendConfirmationEmailAsync(resendConfirmationEmailDTO);
+            return Ok(new ApiResponseDTO(true, "Confirmation email has been sent"));
+        }
+        catch (UserNotExistException e)
+        {
+            return BadRequest(new ApiResponseDTO(false, e.Message));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while resending the confirmation email"));
+        }
+    }
+
+    [HttpGet("refresh-token")]
+    public async Task<IActionResult> RefreshToken()
+    {
+        try
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                return BadRequest(new ApiResponseDTO(false, "Refresh token is required"));
+            }
+
+            var user = await _tokenService.VerifyRefreshTokenAsync(refreshToken);
+            var newRefreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id);
+            var accessToken = _tokenService.GenerateAccessToken(user);
+
+            Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                Secure = false,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(new ApiResponseDTO(true, "Token refreshed", new { accessToken }));
+        }
+        catch (TokenExpiredException e)
+        {
+            return BadRequest(new ApiResponseDTO(false, e.Message));
+        }
+        catch (TokenInvalidException e)
+        {
+            return BadRequest(new ApiResponseDTO(false, e.Message));
+        }
+        catch (UserNotExistException e)
+        {
+            return BadRequest(new ApiResponseDTO(false, e.Message));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while refreshing the token"));
+        }
+    }
+    [HttpGet("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("refreshToken");
+        return Ok(new ApiResponseDTO(true, "Logout successful"));
+    }
+
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOTPAsync(OTPRequestDTO oTPRequestDTO)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(
+                new ApiResponseDTO(
+                    false,
+                    "Invalid data",
+                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
+        }
+        try
+        {
+            await _authService.SendOTPAsync(oTPRequestDTO);
+            return Ok(new ApiResponseDTO(true, "OTP has been sent to your email"));
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500, new ApiResponseDTO(false, e.Message));
+        }
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(
+                new ApiResponseDTO(
+                    false,
+                    "Invalid data",
+                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
+        }
+
+        try
+        {
+            await _authService.ForgotPasswordAsync(forgotPasswordDTO);
+            return Ok(new ApiResponseDTO(true, "Reset password successful"));
+        }
+        catch (UserNotExistException)
+        {
+            return BadRequest(new ApiResponseDTO(false, "Email does not exist"));
+        }
+        catch (TokenExpiredException)
+        {
+            return BadRequest(new ApiResponseDTO(false, "OTP has expired"));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while reset password"));
         }
     }
 }

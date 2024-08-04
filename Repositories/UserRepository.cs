@@ -13,6 +13,7 @@ namespace api.Interfaces
         public Task<User> LoginUserAsync(LoginDTO loginDTO);
         public Task<User> RegisterUserAsync(RegisterDTO registerDTO);
         public Task SetUserVerificationAsync(String Email, bool IsVerified);
+        public Task<User> UpdateUserAsync(User user);
     }
 }
 
@@ -94,6 +95,33 @@ namespace api.Repositories
             {
                 _logger.LogError(e, e.Message);
                 throw new Exception("An error occurred while verifying the user");
+            }
+        }
+
+        public async Task<User> UpdateUserAsync(User user)
+        {
+            try
+            {
+                var existUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+                if (existUser == null)
+                {
+                    throw new UserNotExistException();
+                }
+                else
+                {
+                    existUser.Username = user.Username;
+                    existUser.FirstName = user.FirstName;
+                    existUser.LastName = user.LastName;
+                    existUser.Birthdate = user.Birthdate;
+                    existUser.Password = BcryptUtil.HashPassword(user.Password);
+                    await _context.SaveChangesAsync();
+                    return existUser;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                throw new Exception("An error occurred while updating the user");
             }
         }
     }

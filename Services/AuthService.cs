@@ -1,4 +1,3 @@
-using System.Buffers.Text;
 using System.Security.Cryptography;
 using api.DTOs;
 using api.Interfaces;
@@ -11,6 +10,9 @@ namespace api.Interfaces
         Task RegisterUserAsync(RegisterDTO registerDTO);
         Task<UserDTO> LoginUserAsync(LoginDTO loginDTO);
         Task<Boolean> ConfirmEmailAsync(EmailConfirmationDTO emailConfirmationDTO);
+        Task ResendConfirmationEmailAsync(ResendConfirmationEmailDTO resendConfirmationEmailDTO);
+        Task ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO);
+        Task SendOTPAsync(OTPRequestDTO otpRequestDTO);
     }
 }
 
@@ -72,8 +74,8 @@ namespace api.Services
                     Username = user.Username,
                     Email = user.Email,
                     Birthdate = user.Birthdate,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName
+                    FirstName = user.FirstName!,
+                    LastName = user.LastName!
                 };
 
             }
@@ -93,6 +95,60 @@ namespace api.Services
                     await _userRepository.SetUserVerificationAsync(emailConfirmationDTO.Email, true);
                 }
                 return IsVerified;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task ResendConfirmationEmailAsync(ResendConfirmationEmailDTO resendConfirmationEmailDTO)
+        {
+            try
+            {
+                await _emailService.SendEmailVerificationAsync(
+                    await _verifyInformationRepository
+                        .CreateVerifyInformationAsync(
+                            new VerifyInformation
+                            {
+                                Email = resendConfirmationEmailDTO.Email,
+                                VerifyToken = GenerateVerifyToken(),
+                                VerifyTokenExpiry = DateTime.UtcNow.AddHours(1)
+                            }));
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task SendOTPAsync(OTPRequestDTO otpRequestDTO)
+        {
+            try
+            {
+                var verifyInformation = await _verifyInformationRepository.CreateVerifyInformationAsync(
+                    new VerifyInformation
+                    {
+                        Email = otpRequestDTO.Email,
+                        OTP = new Random().Next(100000, 999999).ToString(),
+                        OTPExpiry = DateTime.UtcNow.AddMinutes(5)
+                    });
+
+                await _emailService.SendOTPAsync(verifyInformation);
+            }
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
+            }
+        }
+
+        public async Task ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
+        {
+            try
+            {
+                var user = await _verifyInformationRepository.VerifyOTPAsync(forgotPasswordDTO);
+                user.Password = forgotPasswordDTO.NewPassword;
+                await _userRepository.UpdateUserAsync(user);
             }
             catch (Exception)
             {

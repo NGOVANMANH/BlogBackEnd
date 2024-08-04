@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using api.Data;
+using api.Exceptions;
 using api.Interfaces;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -9,8 +10,7 @@ namespace api.Interfaces
     public interface IRefreshTokenRepository
     {
         public Task<RefreshToken> CreateRefreshTokenAsync(int userId);
-        public Task<RefreshToken> GetRefreshTokenByTokenAsync(string token);
-        public Task<RefreshToken> UpdateRefreshTokenAsync(RefreshToken refreshToken);
+        public Task<User> VerifyRefreshTokenAsync(string token);
     }
 }
 
@@ -42,8 +42,7 @@ namespace api.Repositories
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = userId,
                     Expires = DateTime.UtcNow.AddDays(7),
-                    ReplacedByToken = null,
-                    Revoked = DateTime.UtcNow.AddDays(7)
+                    ReplacedByToken = null
                 };
 
                 await _context.RefreshTokens.AddAsync(refreshToken);
@@ -52,14 +51,23 @@ namespace api.Repositories
             }
         }
 
-        public Task<RefreshToken> GetRefreshTokenByTokenAsync(string token)
+        public async Task<User> VerifyRefreshTokenAsync(string token)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<RefreshToken> UpdateRefreshTokenAsync(RefreshToken refreshToken)
-        {
-            throw new NotImplementedException();
+            var refreshToken = _context.RefreshTokens.FirstOrDefault(r => r.Token == token);
+            if (refreshToken == null)
+            {
+                throw new TokenInvalidException();
+            }
+            if (refreshToken.Expires < DateTime.UtcNow)
+            {
+                throw new TokenExpiredException();
+            }
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == refreshToken.CreatedBy);
+            if (user == null)
+            {
+                throw new UserNotExistException();
+            }
+            return user;
         }
     }
 }

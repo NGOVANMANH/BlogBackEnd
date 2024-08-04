@@ -20,9 +20,9 @@ public class User
     [DataType(DataType.Date)]
     public DateTime? Birthdate { get; set; }
     [MaxLength(100, ErrorMessage = "First name is too long")]
-    public string FirstName { get; set; } = null!;
+    public string? FirstName { get; set; }
     [MaxLength(100, ErrorMessage = "Last name is too long")]
-    public string LastName { get; set; } = null!;
+    public string? LastName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<RefreshToken> RefreshTokens { get; set; } = new();
