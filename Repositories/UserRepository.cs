@@ -5,15 +5,22 @@ using api.Models;
 using Microsoft.EntityFrameworkCore;
 using api.Utils;
 using api.Exceptions;
+using api.DTOs.Auth;
+using api.DTOs.User;
+using api.Mappers;
 
 namespace api.Interfaces
 {
     public interface IUserRepository
     {
-        public Task<User> LoginUserAsync(LoginDTO loginDTO);
-        public Task<User> RegisterUserAsync(RegisterDTO registerDTO);
-        public Task SetUserVerificationAsync(String Email, bool IsVerified);
-        public Task<User> UpdateUserAsync(User user);
+        Task<User> LoginUserAsync(LoginRequest loginRequest);
+        Task<User> RegisterUserAsync(RegistrationRequest registrationRequest);
+        Task<User> VerifyUserAsync(string email);
+        Task<User> UpdateUserAsync(int id, UpdateUserDTO updateUserDTO);
+        Task<User> CreateUserAsync(UserDTO user);
+        Task<User> FindUserByIdAsync(int id);
+        Task<User> FindUserByEmailAsync(string email);
+        Task<User> FindUserByUsernameAsync(string username);
     }
 }
 
@@ -29,10 +36,76 @@ namespace api.Repositories
             _context = context;
             _logger = logger;
         }
-        public async Task<User> LoginUserAsync(LoginDTO login)
+
+        public async Task<User> CreateUserAsync(UserDTO userDTO)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == login.Email);
-            if (user == null || BcryptUtil.VerifyPassword(login.Password!, user.Password) == false)
+            var existingUser = await _context.Users.FirstOrDefaultAsync(
+                u => u.Id == userDTO.Id ||
+                u.Email == userDTO.Email ||
+                u.Username == userDTO.Username);
+
+            if (existingUser is not null)
+            {
+                throw new AlreadyExistException("User already exist");
+            }
+
+            try
+            {
+                var user = UserMapper.ToModel(userDTO);
+
+                var newUser = await _context.Users.AddAsync(user);
+
+                await _context.SaveChangesAsync();
+
+                return newUser.Entity;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                throw;
+            }
+        }
+
+        public async Task<User> FindUserByEmailAsync(string email)
+        {
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (existingUser is null)
+            {
+                throw new NotFoundException();
+            }
+
+            return existingUser;
+        }
+
+        public async Task<User> FindUserByIdAsync(int id)
+        {
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+            if (existingUser is null)
+            {
+                throw new NotFoundException();
+            }
+
+            return existingUser;
+        }
+
+        public async Task<User> FindUserByUsernameAsync(string username)
+        {
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+
+            if (existingUser is null)
+            {
+                throw new NotFoundException();
+            }
+
+            return existingUser;
+        }
+
+        public async Task<User> LoginUserAsync(LoginRequest loginRequest)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginRequest.Email);
+            if (user == null || BcryptUtil.VerifyPassword(loginRequest.Password!, user.Password) == false)
             {
                 throw new UserNotExistException();
             }
@@ -43,24 +116,24 @@ namespace api.Repositories
             return user;
         }
 
-        public async Task<User> RegisterUserAsync(RegisterDTO registerDTO)
+        public async Task<User> RegisterUserAsync(RegistrationRequest registrationRequest)
         {
-            var hashedPassword = BcryptUtil.HashPassword(registerDTO.Password!);
+            var hashedPassword = BcryptUtil.HashPassword(registrationRequest.Password!);
             var user = new User
             {
-                Email = registerDTO.Email!,
-                Username = registerDTO.Username!,
+                Email = registrationRequest.Email!,
+                Username = registrationRequest.Username!,
                 Password = hashedPassword,
-                FirstName = registerDTO.FirstName!,
-                LastName = registerDTO.LastName!,
-                Birthdate = registerDTO.Birthdate,
+                FirstName = registrationRequest.FirstName!,
+                LastName = registrationRequest.LastName!,
+                Birthdate = registrationRequest.Birthdate,
             };
 
             var existUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email || u.Username == user.Username);
 
             if (existUser != null)
             {
-                throw new UserAlreadyExistException();
+                throw new AlreadyExistException();
             }
 
             try
@@ -76,53 +149,38 @@ namespace api.Repositories
             }
         }
 
-        public async Task SetUserVerificationAsync(String Email, bool IsVerified)
+        public async Task<User> UpdateUserAsync(int id, UpdateUserDTO updateUserDTO)
         {
             try
             {
-                var existUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == Email);
-                if (existUser == null)
-                {
-                    throw new UserNotExistException();
-                }
-                else
-                {
-                    existUser.IsVerified = IsVerified;
-                    await _context.SaveChangesAsync();
-                }
+                var existingUser = await FindUserByIdAsync(id);
+                existingUser.Username = updateUserDTO.Username is null ? existingUser.Username : updateUserDTO.Username;
+                existingUser.Birthdate = updateUserDTO.Birthdate is null ? existingUser.Birthdate : updateUserDTO.Birthdate;
+                existingUser.FirstName = updateUserDTO.FirstName is null ? existingUser.FirstName : updateUserDTO.FirstName;
+                existingUser.LastName = updateUserDTO.LastName is null ? existingUser.LastName : updateUserDTO.LastName;
+                existingUser.Password = updateUserDTO.Password is null ? existingUser.Password : updateUserDTO.Password;
+
+                await _context.SaveChangesAsync();
+                return existingUser;
             }
             catch (Exception e)
             {
                 _logger.LogError(e, e.Message);
-                throw new Exception("An error occurred while verifying the user");
+                throw;
             }
         }
 
-        public async Task<User> UpdateUserAsync(User user)
+        public async Task<User> VerifyUserAsync(string email)
         {
-            try
-            {
-                var existUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-                if (existUser == null)
-                {
-                    throw new UserNotExistException();
-                }
-                else
-                {
-                    existUser.Username = user.Username;
-                    existUser.FirstName = user.FirstName;
-                    existUser.LastName = user.LastName;
-                    existUser.Birthdate = user.Birthdate;
-                    existUser.Password = BcryptUtil.HashPassword(user.Password);
-                    await _context.SaveChangesAsync();
-                    return existUser;
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, e.Message);
-                throw new Exception("An error occurred while updating the user");
-            }
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (existingUser is null) throw new NotFoundException("User not found");
+
+            existingUser.IsVerified = true;
+
+            await _context.SaveChangesAsync();
+
+            return existingUser;
         }
     }
 }

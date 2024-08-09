@@ -1,5 +1,8 @@
 using api.DTOs;
+using api.DTOs.ApiResponse;
+using api.DTOs.Auth;
 using api.Exceptions;
+using api.Extensions.ModelState;
 using api.Interfaces;
 using api.Utils;
 using Microsoft.AspNetCore.Mvc;
@@ -12,173 +15,123 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ITokenService _tokenService;
+    private readonly IUserService _userService;
+    private readonly IOTPService _oTPService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ITokenService tokenService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService,
+        ITokenService tokenService,
+        IUserService userService,
+        IOTPService oTPService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
         _tokenService = tokenService;
+        _userService = userService;
+        _oTPService = oTPService;
         _logger = logger;
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterUserAsync(RegisterDTO registerDTO)
+    public async Task<IActionResult> RegisterUserAsync(RegistrationRequest registrationRequest)
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid data",
-                    new
-                    {
-                        errors = ModelStateUtil.FormatModelStateErrors(ModelState)
-                    }
-                ));
+            // Log error 
+            var errors = ModelState.GetErrors();
+            foreach (var error in errors)
+            {
+                _logger.LogError("Model validation failed: {Key} - {Error}", error.Key, error.Value);
+            }
+
+            // return response
+            return BadRequest(new FailResponse().GetInvalidResponse(errors: errors));
         }
+
         try
         {
-            await _authService.RegisterUserAsync(registerDTO);
+            // call service handle register
+            var newUser = await _authService.RegisterUserAsync(registrationRequest);
+
+            // return response
             return Created(
                 "api/auth/register",
-                new ApiResponseDTO(
-                    true,
-                    "Please verrify your email"));
+                new SuccessResponse(StatusCodes.Status201Created,
+                "Register successfull, please verify email to use this account",
+                new
+                {
+                    user = newUser
+                }));
         }
-        catch (UserAlreadyExistException e)
+        catch (AlreadyExistException)
         {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
+            return BadRequest(new FailResponse(StatusCodes.Status400BadRequest, "Email or username is already exist"));
         }
         catch (Exception e)
         {
             _logger.LogError(e, e.Message);
-            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while registering the user"));
+            return StatusCode(StatusCodes.Status500InternalServerError,
+            new FailResponse().GetInternalServerError());
         }
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> LoginUserAsync(LoginDTO loginDTO)
+    public async Task<IActionResult> LoginUserAsync(LoginRequest loginRequest)
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid data",
-                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
+            return BadRequest(new FailResponse(400, "Invalid Data", ModelState.GetErrors()));
         }
 
         try
         {
-            var user = await _authService.LoginUserAsync(loginDTO);
+            var user = await _authService.LoginUserAsync(loginRequest);
 
             var accessToken = _tokenService.GenerateAccessToken(user);
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id);
 
             Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
             {
-                HttpOnly = true,
-                SameSite = SameSiteMode.None,
-                Secure = false,
+                HttpOnly = false,
+                SameSite = SameSiteMode.Strict,
+                Secure = true,
                 Expires = DateTime.UtcNow.AddDays(7)
             });
 
-            return Ok(new ApiResponseDTO(true, "Login successful", new { user, accessToken }));
+            return Ok(new SuccessResponse(
+                StatusCodes.Status200OK,
+                "Login successfull",
+                new
+                {
+                    user,
+                    token = accessToken
+                }));
         }
         catch (UserNotExistException)
         {
-            return BadRequest(new ApiResponseDTO(false, "Email or password is incorrect"));
+            return NotFound(new FailResponse(404, "Email or password is incorrect"));
         }
         catch (UserNotVerifiedException e)
         {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
+            return BadRequest(new FailResponse(400, e.Message));
         }
         catch (Exception e)
         {
             _logger.LogError(e, e.Message);
-            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while logging in"));
-        }
-    }
-
-    [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmailAsync([FromQuery] ConfirmEmailReqDTO confirmEmailReqDTO)
-    {
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(
-                    new ApiResponseDTO(
-                        false,
-                        "Invalid data",
-                        new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
-            }
-
-            confirmEmailReqDTO.VerifyToken = confirmEmailReqDTO.VerifyToken.Replace(" ", "+");
-
-            try
-            {
-                await _authService.ConfirmEmailAsync(new EmailConfirmationDTO
-                {
-                    Email = confirmEmailReqDTO.Email,
-                    VerifyToken = confirmEmailReqDTO.VerifyToken
-                });
-
-                var htmlContent = HtmlTemplate.ThanksForConfirmingEmail;
-                return Content(htmlContent, "text/html");
-            }
-            catch (TokenInvalidException e)
-            {
-                return BadRequest(new ApiResponseDTO(false, e.Message));
-            }
-            catch (TokenExpiredException e)
-            {
-                return BadRequest(new ApiResponseDTO(false, e.Message));
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, e.Message);
-                return StatusCode(500, new ApiResponseDTO(false, "An error occurred while confirming the email"));
-            }
-        }
-    }
-
-    [HttpPost("resend-confirm-email")]
-    public async Task<IActionResult> ResendConfirmationEmailAsync(ResendConfirmationEmailDTO resendConfirmationEmailDTO)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid data",
-                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
-        }
-
-        try
-        {
-            await _authService.ResendConfirmationEmailAsync(resendConfirmationEmailDTO);
-            return Ok(new ApiResponseDTO(true, "Confirmation email has been sent"));
-        }
-        catch (UserNotExistException e)
-        {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, e.Message);
-            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while resending the confirmation email"));
+            return StatusCode(500, new FailResponse().GetInternalServerError());
         }
     }
 
     [HttpGet("refresh-token")]
-    public async Task<IActionResult> RefreshToken()
+    public async Task<IActionResult> RefreshTokenAsync()
     {
         try
         {
             var refreshToken = Request.Cookies["refreshToken"];
             if (string.IsNullOrEmpty(refreshToken))
             {
-                return BadRequest(new ApiResponseDTO(false, "Refresh token is required"));
+                return BadRequest(new FailResponse(400, "Refresh token is required"));
             }
 
             var user = await _tokenService.VerifyRefreshTokenAsync(refreshToken);
@@ -193,84 +146,69 @@ public class AuthController : ControllerBase
                 Expires = DateTime.UtcNow.AddDays(7)
             });
 
-            return Ok(new ApiResponseDTO(true, "Token refreshed", new { accessToken }));
+            return Ok(new SuccessResponse(200, "Token refreshed", new { token = accessToken }));
         }
         catch (TokenExpiredException e)
         {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
+            return BadRequest(new FailResponse(400, e.Message));
         }
         catch (TokenInvalidException e)
         {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
+            return BadRequest(new FailResponse(400, e.Message));
         }
         catch (UserNotExistException e)
         {
-            return BadRequest(new ApiResponseDTO(false, e.Message));
+            return BadRequest(new FailResponse(400, e.Message));
         }
         catch (Exception e)
         {
             _logger.LogError(e, e.Message);
-            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while refreshing the token"));
+            return StatusCode(500, new FailResponse().GetInternalServerError());
         }
     }
     [HttpGet("logout")]
     public IActionResult Logout()
     {
         Response.Cookies.Delete("refreshToken");
-        return Ok(new ApiResponseDTO(true, "Logout successful"));
+        return Ok(new SuccessResponse(200, "Logout successfull"));
     }
 
-    [HttpPost("send-otp")]
-    public async Task<IActionResult> SendOTPAsync(OTPRequestDTO oTPRequestDTO)
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
     {
-        if (!ModelState.IsValid)
+        if (token is null)
         {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid data",
-                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
-        }
-        try
-        {
-            await _authService.SendOTPAsync(oTPRequestDTO);
-            return Ok(new ApiResponseDTO(true, "OTP has been sent to your email"));
-        }
-        catch (Exception e)
-        {
-            return StatusCode(500, new ApiResponseDTO(false, e.Message));
-        }
-    }
-
-    [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(
-                new ApiResponseDTO(
-                    false,
-                    "Invalid data",
-                    new { errors = ModelStateUtil.FormatModelStateErrors(ModelState) }));
+            return Content(HtmlUtil.GetVerificationResultPage("invalid"), "text/html");
         }
 
         try
         {
-            await _authService.ForgotPasswordAsync(forgotPasswordDTO);
-            return Ok(new ApiResponseDTO(true, "Reset password successful"));
+            var email = _tokenService.VerifyVerificationToken(token);
+            var user = await _userService.VerifyUser(email);
+
+            return Content(HtmlUtil.GetVerificationResultPage("success"), "text/html");
         }
-        catch (UserNotExistException)
+        catch (NotFoundException)
         {
-            return BadRequest(new ApiResponseDTO(false, "Email does not exist"));
+            return Content(HtmlUtil.GetVerificationResultPage("notfound"), "text/html");
         }
-        catch (TokenExpiredException)
+        catch (Exception)
         {
-            return BadRequest(new ApiResponseDTO(false, "OTP has expired"));
+            return Content(HtmlUtil.GetVerificationResultPage(), "text/html");
         }
-        catch (Exception e)
+    }
+    [HttpPut("forgot-password")]
+    public async Task<IActionResult> ForgetPassword(ForgotPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
         {
-            _logger.LogError(e, e.Message);
-            return StatusCode(500, new ApiResponseDTO(false, "An error occurred while reset password"));
+            return BadRequest(new FailResponse().GetInvalidResponse(errors: ModelState.GetErrors()));
         }
+
+        await _oTPService.VerifyOtpAsync(request.Email, request.OTP);
+
+        await _userService.ChangePasswordByEmailAsync(request.Email, request.NewPassword);
+
+        return Ok(new SuccessResponse(200, "Password reset successfully"));
     }
 }

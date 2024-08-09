@@ -1,7 +1,9 @@
+using MongoDB.Bson;
+
 namespace api.DTOs;
 public class ChatMessageDTO
 {
-    public string Sender { get; set; } = null!;
-    public string Message { get; set; } = null!;
+    public int UserId;
+    public string Content { get; set; } = null!;
     public DateTime Timestamp { get; set; }
 }

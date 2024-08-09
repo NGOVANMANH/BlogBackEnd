@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verification Status</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      .container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        text-align: center;
+      }
+      .status-icon {
+        font-size: 50px;
+        margin-bottom: 20px;
+      }
+      .status-message {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #333333;
+      }
+      .status-detail {
+        font-size: 16px;
+        color: #666666;
+        margin-bottom: 20px;
+      }
+      .status-success {
+        color: #28a745;
+      }
+      .status-failure {
+        color: #dc3545;
+      }
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin-top: 20px;
+        background-color: #007bff;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+      .button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Dynamic Content Based on Verification Status -->
+      <div class="status-icon">
+        <!-- Success Icon: 😊 | Failure Icon: 😞 -->
+        [StatusIcon]
+      </div>
+      <div class="status-message [StatusClass]">
+        <!-- Success or Failure Message -->
+        [StatusMessage]
+      </div>
+      <div class="status-detail">
+        <!-- Detailed Information -->
+        [StatusDetail]
+      </div>
+      <a href="/" class="button">Return to Home</a>
+    </div>
+  </body>
+</html>

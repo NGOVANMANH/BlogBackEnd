@@ -8,9 +8,8 @@ namespace api.Interfaces
 {
     public interface IEmailService
     {
-        Task SendEmailAsync(string email, string subject, string message);
-        Task SendEmailVerificationAsync(VerifyInformation verifyInformation);
-        Task SendOTPAsync(VerifyInformation verifyInformation);
+        Task SendVerificationAsync(string toEmail, string token);
+        Task SendOtpAsync(string toEmail, string OTP);
     }
 }
 
@@ -18,49 +17,85 @@ namespace api.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly IConfiguration _configuration;
+        private readonly String emailHost;
+        private readonly int port;
+        private readonly String email;
+        private readonly String password;
+        private readonly String apiBaseUrl;
+        private readonly ITokenService _tokenService;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IConfiguration configuration)
+        public EmailService(IConfiguration configuration, ITokenService tokenService, ILogger<EmailService> logger)
         {
-            _configuration = configuration;
+            emailHost = configuration["EmailSettings:Host"]!;
+            port = int.Parse(configuration["EmailSettings:Port"]!);
+            email = configuration["EmailSettings:Email"]!;
+            password = configuration["EmailSettings:Password"]!;
+            apiBaseUrl = configuration["ApiUrl:Base"]!;
+            _tokenService = tokenService;
+            _logger = logger;
         }
 
-        public async Task SendEmailAsync(string email, string subject, string message)
+        private async Task SendEmailAsync(string toEmail, string subject, string message, string[]? ccEmails = null)
         {
-            var smtpClient = new SmtpClient(_configuration["EmailSettings:Host"])
+            try
             {
-                Port = int.Parse(_configuration["EmailSettings:Port"]!),
-                Credentials = new NetworkCredential(_configuration["EmailSettings:Email"], _configuration["EmailSettings:Password"]),
-                EnableSsl = true,
-            };
+                using (var smtpClient = new SmtpClient(emailHost, port)
+                {
+                    Credentials = new NetworkCredential(email, password),
+                    EnableSsl = true,
+                })
+                using (var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(email),
+                    Subject = subject,
+                    Body = message,
+                    IsBodyHtml = true,
+                })
+                {
+                    mailMessage.To.Add(toEmail);
 
-            var mailMessage = new MailMessage
+                    if (ccEmails != null)
+                    {
+                        foreach (var ccEmail in ccEmails)
+                        {
+                            mailMessage.CC.Add(ccEmail);
+                        }
+                    }
+
+                    await smtpClient.SendMailAsync(mailMessage);
+                }
+            }
+            catch (SmtpFailedRecipientException ex)
             {
-                From = new MailAddress(_configuration["EmailSettings:Email"]!),
-                Subject = subject,
-                Body = message,
-                IsBodyHtml = true,
-            };
-
-            mailMessage.To.Add(email);
-
-            await smtpClient.SendMailAsync(mailMessage);
+                // Handle recipient-related errors, like invalid email address or domain not found.
+                _logger.LogError($"Failed to deliver message to {ex.FailedRecipient}. Reason:", ex.Message);
+            }
+            catch (SmtpException ex)
+            {
+                // Handle general SMTP errors
+                _logger.LogError($"SMTP error occurred: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // Handle any other unexpected errors
+                _logger.LogError($"Unexpected error occurred: {ex.Message}");
+            }
         }
 
-        public async Task SendEmailVerificationAsync(VerifyInformation verifyInformation)
+        public async Task SendVerificationAsync(string toEmail, string token)
         {
-            var host = "http://localhost:5076";
-            var verificationUrl = $"{host}/api/Auth/confirm-email?VerifyToken={verifyInformation.VerifyToken}&email={verifyInformation.Email}";
+            string verificationUrl = $"{apiBaseUrl}/api/auth/verify-email?token={token}";
+            string verificationEmail = HtmlUtil.GetVerificationEmail(verificationUrl);
 
-            var emailBody = HtmlTemplate.GetEmailVerificationTemplate(verificationUrl);
-
-            await SendEmailAsync(verifyInformation.Email, "Verify Email", emailBody);
+            await SendEmailAsync(toEmail, "VERIFY YOUR EMAIL", verificationEmail);
         }
 
-        public async Task SendOTPAsync(VerifyInformation verifyInformation)
+        public async Task SendOtpAsync(string toEmail, string OTP)
         {
-            var emailBody = HtmlTemplate.GetOTPEmailTemplate(verifyInformation.OTP!);
-            await SendEmailAsync(verifyInformation.Email, "OTP", emailBody);
+            string OTPEmail = HtmlUtil.GetOTPEmail(OTP);
+
+            await SendEmailAsync(toEmail, "OTP", OTPEmail);
         }
     }
 }

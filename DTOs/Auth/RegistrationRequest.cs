@@ -1,9 +1,8 @@
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace api.DTOs;
+namespace api.DTOs.Auth;
 
-public class RegisterDTO
+public class RegistrationRequest
 {
     [Required(ErrorMessage = "Username is required")]
     [MinLength(3, ErrorMessage = "Username is too short")]

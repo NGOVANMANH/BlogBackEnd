@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace api.DTOs;
+namespace api.DTOs.User;
 
 public class UserDTO
 {
@@ -9,6 +9,7 @@ public class UserDTO
     public string Email { get; set; } = null!;
     [DataType(DataType.Date)]
     public DateTime? Birthdate { get; set; }
-    public string FirstName { get; set; } = null!;
-    public string LastName { get; set; } = null!;
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public bool IsVerified { get; set; }
 }

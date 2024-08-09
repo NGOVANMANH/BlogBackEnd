@@ -1,4 +1,5 @@
 using api.DTOs;
+using api.DTOs.ApiResponse;
 using api.Interfaces;
 using api.Models;
 using api.Utils;
@@ -23,8 +24,8 @@ public class BlogController : ControllerBase
         if (!ModelState.IsValid)
         {
             return BadRequest(
-                new ApiResponseDTO(
-                    false,
+                new FailResponse(
+                    400,
                     "Invalid data",
                     new
                     {
@@ -46,8 +47,8 @@ public class BlogController : ControllerBase
             var createdBlog = await _blogService.CreateBlogAsync(newBlog);
             return Created(
                 "blog",
-                new ApiResponseDTO(
-                    true,
+                new SuccessResponse(
+                    200,
                     "Blog created successfully",
                     createdBlog
                 )
@@ -57,8 +58,8 @@ public class BlogController : ControllerBase
         {
             return StatusCode(
                 500,
-                new ApiResponseDTO(
-                    false,
+                new FailResponse(
+                    500,
                     e.Message
                 )
             );
@@ -71,8 +72,8 @@ public class BlogController : ControllerBase
         {
             var blogs = await _blogService.GetBlogsAsync();
             return Ok(
-                new ApiResponseDTO(
-                    true,
+                new SuccessResponse(
+                    200,
                     "Blogs fetched successfully",
                     blogs
                 )
@@ -82,8 +83,8 @@ public class BlogController : ControllerBase
         {
             return StatusCode(
                 500,
-                new ApiResponseDTO(
-                    false,
+                new FailResponse(
+                    500,
                     e.Message
                 )
             );

@@ -1,12 +1,17 @@
-using api.DTOs;
+using api.DTOs.Auth;
+using api.DTOs.User;
 using api.Interfaces;
+using api.Mappers;
+using api.Utils;
 
 namespace api.Interfaces
 {
     public interface IUserService
     {
-        Task<UserDTO?> RegisterUserAsync(RegisterDTO user);
-        Task<UserDTO?> LoginUserAsync(LoginDTO login);
+        Task<UserDTO?> RegisterUserAsync(RegistrationRequest user);
+        Task<UserDTO?> LoginUserAsync(LoginRequest login);
+        Task<UserDTO> VerifyUser(string email);
+        Task<UserDTO> ChangePasswordByEmailAsync(string email, string newPassword);
     }
 }
 
@@ -22,7 +27,23 @@ namespace api.Services
             _userRepository = userRepository;
         }
 
-        public async Task<UserDTO?> LoginUserAsync(LoginDTO login)
+        public async Task<UserDTO> ChangePasswordByEmailAsync(string email, string newPassword)
+        {
+            var existingUser = await _userRepository.FindUserByEmailAsync(email);
+
+            existingUser.Password = BcryptUtil.HashPassword(newPassword);
+
+            var updateUserDTO = new UpdateUserDTO
+            {
+                Password = existingUser.Password,
+            };
+
+            var updatedUser = await _userRepository.UpdateUserAsync(existingUser.Id, updateUserDTO);
+
+            return UserMapper.ToDTO(updatedUser);
+        }
+
+        public async Task<UserDTO?> LoginUserAsync(LoginRequest login)
         {
             var user = await _userRepository.LoginUserAsync(login);
             if (user != null)
@@ -43,7 +64,7 @@ namespace api.Services
             }
         }
 
-        public async Task<UserDTO?> RegisterUserAsync(RegisterDTO user)
+        public async Task<UserDTO?> RegisterUserAsync(RegistrationRequest user)
         {
             try
             {
@@ -61,6 +82,20 @@ namespace api.Services
             catch (Exception e)
             {
                 throw new Exception(e.Message);
+            }
+        }
+
+        public async Task<UserDTO> VerifyUser(string email)
+        {
+            try
+            {
+                var user = await _userRepository.VerifyUserAsync(email);
+
+                return UserMapper.ToDTO(user);
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
     }

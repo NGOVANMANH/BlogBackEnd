@@ -1,4 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using api.DTOs;
 using api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -14,10 +18,4 @@ public class UserController : ControllerBase
         _userService = userService;
     }
 
-    // [HttpGet("profile")]
-    // [Authorize]
-    // public async Task<IActionResult> GetUserProfileAsync()
-    // {
-    //     return Ok();
-    // }
 }

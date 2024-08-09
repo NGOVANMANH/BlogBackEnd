@@ -1,6 +1,5 @@
 using System.Text;
 using api.Data;
-using api.DTOs;
 using api.Interfaces;
 using api.Middlewares;
 using api.Repositories;
@@ -9,12 +8,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
-    .ConfigureApiBehaviorOptions(opt => opt.SuppressModelStateInvalidFilter = true);
+    .ConfigureApiBehaviorOptions(opt => opt.SuppressModelStateInvalidFilter = true)
+    .AddJsonOptions(opt =>
+    {
+        opt.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        opt.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -52,56 +57,30 @@ builder.Services.AddDbContext<BlogDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Mssql"));
 });
 
-// Add JWT authentication
-builder.Services.AddAuthentication(
-    JwtBearerDefaults.AuthenticationScheme
-).AddJwtBearer(opt =>
+
+builder.Services.AddDbContext<MongoContext>(opt =>
 {
-    opt.UseSecurityTokenValidators = true;
-    opt.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? ""))
-    };
-    // Add logging for authentication events
-    opt.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError("Authentication failed: {0}", context.Exception.Message);
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Token validated for user: {0}", context.Principal?.Identity?.Name);
-            return Task.CompletedTask;
-        },
-        OnChallenge = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("Token validation failed: {0}", context.ErrorDescription);
-
-            // Custom response using ApiResponseDTO
-            context.Response.StatusCode = 401;
-            context.Response.ContentType = "application/json";
-            var response = new ApiResponseDTO
-            {
-                Success = false,
-                Message = "Unauthorized access. Token is invalid or expired."
-            };
-            var result = System.Text.Json.JsonSerializer.Serialize(response);
-            context.Response.WriteAsync(result);
-
-            context.HandleResponse(); // Suppress the default response
-            return Task.CompletedTask;
-        }
-    };
+    opt.UseMongoDB(
+        new MongoClient(builder.Configuration.GetSection("MongoDB:ConnectionURI").Value),
+        builder.Configuration.GetSection("MongoDB:DatabaseName").Value!
+        );
 });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 // Add dependencies lifecycle
 builder.Services.AddScoped<IUserService, UserService>();
@@ -110,9 +89,12 @@ builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IVerifyInformationRepository, VerifyInformationRepository>();
+
+
+builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IOTPService, OTPService>();
+builder.Services.AddTransient<IOTPRepository, OTPRepository>();
 
 builder.Services.AddSingleton<WsHandler>();
 

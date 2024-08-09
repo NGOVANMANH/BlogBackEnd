@@ -9,7 +9,6 @@ public class BlogDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Blog> Blogs { get; set; }
-    public DbSet<VerifyInformation> VerifyInformations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +23,5 @@ public class BlogDbContext : DbContext
         modelBuilder.Entity<Blog>().Property(b => b.CreatedAt).HasDefaultValueSql("GetDate()").ValueGeneratedOnAdd();
         modelBuilder.Entity<Blog>().Property(b => b.UpdatedAt).HasDefaultValueSql("GetDate()").ValueGeneratedOnAddOrUpdate();
 
-        modelBuilder.Entity<VerifyInformation>().HasKey(v => v.Email);
     }
 }

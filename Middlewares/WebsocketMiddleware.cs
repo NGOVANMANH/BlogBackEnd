@@ -1,5 +1,6 @@
 using System.Text.Json;
 using api.DTOs;
+using api.DTOs.ApiResponse;
 
 namespace api.Middlewares;
 
@@ -26,7 +27,7 @@ public class WebSocketMiddleware
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 context.Response.ContentType = "application/json";
 
-                var response = new ApiResponseDTO(false, "Hmm...");
+                var response = new FailResponse(40, "Hmm...");
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             }
         }

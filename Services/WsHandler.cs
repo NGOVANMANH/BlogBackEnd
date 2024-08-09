@@ -2,90 +2,148 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using api.DTOs;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace api.Services;
 
 public class WsHandler
 {
-    private readonly ConcurrentDictionary<string, WebSocket> _sockets = new ConcurrentDictionary<string, WebSocket>();
+    private readonly ConcurrentDictionary<int, WebSocket> _sockets = new ConcurrentDictionary<int, WebSocket>();
+    private readonly ILogger<WsHandler> _logger;
+    private const int SYSTEM = -1;
 
-    public void AddSocket(string id, WebSocket socket)
+    public WsHandler(ILogger<WsHandler> logger)
     {
-        _sockets.TryAdd(id, socket);
-        // Gửi thông báo khi một client mới tham gia
-        BroadcastMessageAsync(new ChatMessageDTO
-        {
-            Sender = "System",
-            Message = $"{id} has joined the chat.",
-            Timestamp = DateTime.UtcNow
-        }).Wait();
+        _logger = logger;
     }
 
-    public async Task RemoveSocket(string id)
+    public async Task AddSocketAsync(int userId, WebSocket socket)
     {
-        if (_sockets.TryRemove(id, out var socket))
+        if (_sockets.TryAdd(userId, socket))
         {
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by the WebSocketHandler", CancellationToken.None);
-            // Gửi thông báo khi một client rời đi
+            _logger.LogInformation($"{userId} has joined the chat.");
             await BroadcastMessageAsync(new ChatMessageDTO
             {
-                Sender = "Sytem",
-                Message = $"{id} has left the chat.",
+                UserId = SYSTEM,
+                Content = $"{userId} has joined the chat.",
                 Timestamp = DateTime.UtcNow
             });
         }
-    }
-
-    public async Task SendMessageAsync(string id, ChatMessageDTO chatMessageDTO)
-    {
-        if (_sockets.TryGetValue(id, out var socket) && socket.State == WebSocketState.Open)
+        else
         {
-            var chatMessageJson = JsonConvert.SerializeObject(chatMessageDTO);
-            var buffer = Encoding.UTF8.GetBytes(chatMessageJson);
-            await socket.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            _logger.LogWarning($"Failed to add socket for {userId}");
         }
     }
 
-    public async Task ReceiveMessageAsync(string id)
+    public async Task RemoveSocketAsync(int userId)
     {
-        if (_sockets.TryGetValue(id, out var socket))
+        if (_sockets.TryRemove(userId, out var socket))
+        {
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by the WebSocketHandler", CancellationToken.None);
+            _logger.LogInformation($"{userId} has left the chat.");
+            await BroadcastMessageAsync(new ChatMessageDTO
+            {
+                UserId = SYSTEM,
+                Content = $"{userId} has left the chat.",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            _logger.LogWarning($"Failed to remove socket for {userId}");
+        }
+    }
+
+    public async Task SendMessageAsync(int userId, ChatMessageDTO chatMessageDTO)
+    {
+        if (_sockets.TryGetValue(userId, out var socket) && socket.State == WebSocketState.Open)
+        {
+            var chatMessageJson = JsonSerializer.Serialize(chatMessageDTO);
+            var buffer = Encoding.UTF8.GetBytes(chatMessageJson);
+
+            try
+            {
+                await socket.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error sending message to {userId}: {ex.Message}");
+            }
+        }
+        else
+        {
+            _logger.LogWarning($"Socket for {userId} is not open or does not exist.");
+        }
+    }
+
+    public async Task ReceiveMessageAsync(int userId)
+    {
+        if (_sockets.TryGetValue(userId, out var socket))
         {
             var buffer = new byte[1024 * 4];
             WebSocketReceiveResult result;
 
-            do
+            try
             {
-                result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (!result.CloseStatus.HasValue)
+                do
                 {
-                    var chatMessageJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    var chatMessageDTO = JsonConvert.DeserializeObject<ChatMessageDTO>(chatMessageJson);
-                    // Phát lại tin nhắn cho tất cả các kết nối khác
-                    foreach (var s in _sockets.Where(s => s.Key != id))
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                    if (!result.CloseStatus.HasValue)
                     {
-                        if (s.Value.State == WebSocketState.Open)
+                        var chatMessageJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        var chatMessageDTO = JsonSerializer.Deserialize<ChatMessageDTO>(chatMessageJson);
+
+                        _logger.LogInformation($"Sever recieved: {chatMessageDTO?.UserId} => {chatMessageDTO?.Content}");
+
+                        // Phát lại tin nhắn cho tất cả các kết nối khác
+                        foreach (var s in _sockets.Where(s => s.Key != userId))
                         {
-                            await SendMessageAsync(s.Key, chatMessageDTO!);
+                            if (s.Value.State == WebSocketState.Open)
+                            {
+                                await SendMessageAsync(s.Key, chatMessageDTO!);
+                            }
                         }
                     }
-                }
-            } while (!result.CloseStatus.HasValue);
+                } while (!result.CloseStatus.HasValue);
 
-            await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            await RemoveSocket(id);
+                await RemoveSocketAsync(userId);
+            }
+            catch (WebSocketException ex)
+            {
+                _logger.LogError($"WebSocket error while receiving message from {userId}: {ex.Message}");
+                await RemoveSocketAsync(userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error receiving message from {userId}: {ex.Message}");
+                await RemoveSocketAsync(userId);
+            }
+        }
+        else
+        {
+            _logger.LogWarning($"Socket for {userId} does not exist.");
         }
     }
 
+
     private async Task BroadcastMessageAsync(ChatMessageDTO chatMessageDTO)
     {
-        var chatMessageJson = JsonConvert.SerializeObject(chatMessageDTO);
+        var chatMessageJson = JsonSerializer.Serialize(chatMessageDTO);
         var buffer = Encoding.UTF8.GetBytes(chatMessageJson);
+
         foreach (var socket in _sockets.Values)
         {
             if (socket.State == WebSocketState.Open)
             {
-                await socket.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                try
+                {
+                    await socket.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error broadcasting message: {ex.Message}");
+                }
             }
         }
     }

@@ -2,7 +2,7 @@ namespace api.Exceptions;
 
 public class TokenExpiredException : Exception
 {
-    public TokenExpiredException() : base("Token is expired")
+    public TokenExpiredException(string message = "Token is expired") : base(message)
     {
     }
 }
