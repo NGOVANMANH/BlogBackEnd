@@ -6,8 +6,9 @@ namespace api.Mappers;
 
 public static class UserMapper
 {
-    public static UserDTO ToDTO(User user)
+    public static UserDTO? ToDTO(User? user)
     {
+        if (user is null) return null;
         return new UserDTO
         {
             Id = user.Id,

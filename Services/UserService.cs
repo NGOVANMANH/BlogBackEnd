@@ -93,7 +93,7 @@ namespace api.Services
             {
                 var user = await _userRepository.VerifyUserAsync(email);
 
-                return UserMapper.ToDTO(user);
+                return UserMapper.ToDTO(user)!;
             }
             catch (Exception)
             {

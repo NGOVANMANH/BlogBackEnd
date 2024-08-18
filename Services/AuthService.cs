@@ -32,7 +32,7 @@ namespace api.Services
             {
                 var newUser = await _userRepository.RegisterUserAsync(registrationRequest);
 
-                return UserMapper.ToDTO(newUser);
+                return UserMapper.ToDTO(newUser)!;
             }
             catch (Exception)
             {

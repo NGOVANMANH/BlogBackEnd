@@ -81,7 +81,7 @@ public class ChatController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(new FailResponse().GetInvalidResponse(errors: ModelState.GetErrors()));
+            return BadRequest(new FailResponse().GetInvalidResponse(error: ModelState.GetErrors()));
         }
         try
         {
@@ -100,7 +100,7 @@ public class ChatController : ControllerBase
     {
         if (id is null || !ObjectId.TryParse(id, out _))
         {
-            return BadRequest(new FailResponse().GetInvalidResponse(errors: new
+            return BadRequest(new FailResponse().GetInvalidResponse(error: new
             {
                 id = "Id invalid"
             }));

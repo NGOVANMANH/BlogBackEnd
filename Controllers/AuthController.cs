@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
             }
 
             // return response
-            return BadRequest(new FailResponse().GetInvalidResponse(errors: errors));
+            return BadRequest(new FailResponse().GetInvalidResponse(error: errors));
         }
 
         try
@@ -202,7 +202,7 @@ public class AuthController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(new FailResponse().GetInvalidResponse(errors: ModelState.GetErrors()));
+            return BadRequest(new FailResponse().GetInvalidResponse(error: ModelState.GetErrors()));
         }
         try
         {

@@ -2,20 +2,20 @@ namespace api.DTOs.ApiResponse;
 
 public class FailResponse : ApiResponse
 {
-    public Object? Errors { get; set; }
-    public FailResponse(int statusCode, string message, Object? errors = null) : base(statusCode, false, message)
+    public Object? Error { get; set; }
+    public FailResponse(int statusCode, string? message, Object? error = null) : base(statusCode, false, message)
     {
-        Errors = errors;
+        Error = error;
     }
     public FailResponse() { }
-    public FailResponse GetInvalidResponse(string message = "Invalid data", Object? errors = null)
+    public FailResponse GetInvalidResponse(string message = "Invalid data", Object? error = null)
     {
-        return new FailResponse(StatusCodes.Status400BadRequest, message, errors);
+        return new FailResponse(StatusCodes.Status400BadRequest, message, error);
     }
 
-    public FailResponse GetInternalServerError(string message = "Internal server error", Object? errors = null)
+    public FailResponse GetInternalServerError(string message = "Internal server error", Object? error = null)
     {
-        return new FailResponse(StatusCodes.Status500InternalServerError, message, errors);
+        return new FailResponse(StatusCodes.Status500InternalServerError, message, error);
     }
 
 }
