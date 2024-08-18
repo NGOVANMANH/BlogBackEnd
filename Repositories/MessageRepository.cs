@@ -7,18 +7,6 @@ using api.Enities;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 
-namespace api.Interfaces
-{
-    public interface IMessageRepository
-    {
-        Task<Message> CreateMessageAsync(MessageDTO messageDTO);
-        Task<Message> GetMessageByIdAsync(string id);
-        Task<List<Message>> GetMessagesByRoomIdAsync(string roomId);
-        Task<Message> UpdateMessageAsync();
-        Task<Message> DeleteMessageAsync();
-    }
-}
-
 namespace api.Repositories
 {
     public class MessageRepository : IMessageRepository

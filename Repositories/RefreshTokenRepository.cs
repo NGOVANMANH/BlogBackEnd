@@ -5,15 +5,6 @@ using api.Interfaces;
 using api.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace api.Interfaces
-{
-    public interface IRefreshTokenRepository
-    {
-        public Task<RefreshToken> CreateRefreshTokenAsync(int userId);
-        public Task<User> VerifyRefreshTokenAsync(string token);
-    }
-}
-
 namespace api.Repositories
 {
     public class RefreshTokenRepository : IRefreshTokenRepository

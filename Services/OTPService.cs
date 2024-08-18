@@ -3,15 +3,6 @@ using api.Interfaces;
 using api.Enities;
 using api.Utils;
 
-namespace api.Interfaces
-{
-    public interface IOTPService
-    {
-        Task<string> GenerateOtpAsync(string email);
-        Task<OTPManager?> VerifyOtpAsync(string email, string OTP);
-    }
-}
-
 namespace api.Services
 {
     public class OTPService : IOTPService

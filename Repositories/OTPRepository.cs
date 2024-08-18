@@ -4,16 +4,6 @@ using api.Interfaces;
 using api.Enities;
 using Microsoft.EntityFrameworkCore;
 
-namespace api.Interfaces
-{
-    public interface IOTPRepository
-    {
-        Task<OTPManager> CreateOtpAsync(OTPManager otpManager);
-        Task<OTPManager> FindOtpByEmailAsync(string email);
-        Task<OTPManager> UpdateOtpAsync(OTPManager otpManager);
-    }
-}
-
 namespace api.Repositories
 {
     public class OTPRepository : IOTPRepository

@@ -4,18 +4,6 @@ using api.Entities;
 using api.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace api.Interfaces
-{
-    public interface IBlogRepository
-    {
-        Task<Blog> CreateBlogAsync(BlogDTO blogDTO);
-        Task<List<Blog>> GetBlogsAsync();
-        Task<Blog?> GetBlogAsync(int id);
-        Task<Blog?> UpdateBlogAsync(int id, UpdateBlogDTO blogDTO);
-        Task<Blog?> DeleteBlogAsync(int id);
-    }
-}
-
 namespace api.Repositories
 {
     public class BlogRepository : IBlogRepository

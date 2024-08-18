@@ -4,17 +4,6 @@ using api.Interfaces;
 using api.Mappers;
 using api.Utils;
 
-namespace api.Interfaces
-{
-    public interface IUserService
-    {
-        Task<UserDTO?> RegisterUserAsync(RegistrationRequest user);
-        Task<UserDTO?> LoginUserAsync(LoginRequest login);
-        Task<UserDTO> VerifyUser(string email);
-        Task<UserDTO?> ChangePasswordByEmailAsync(string email, string newPassword);
-    }
-}
-
 namespace api.Services
 {
 

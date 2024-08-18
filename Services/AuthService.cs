@@ -1,19 +1,7 @@
-using System.Security.Cryptography;
 using api.DTOs.User;
 using api.DTOs.Auth;
 using api.Interfaces;
-using api.Entities;
-using api.DTOs;
 using api.Mappers;
-
-namespace api.Interfaces
-{
-    public interface IAuthService
-    {
-        Task<UserDTO> RegisterUserAsync(RegistrationRequest registrationRequest);
-        Task<UserDTO> LoginUserAsync(LoginRequest loginRequest);
-    }
-}
 
 namespace api.Services
 {

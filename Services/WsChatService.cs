@@ -1,23 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
 using api.DTOs.Chat;
 using api.Interfaces;
-using api.Repositories;
 using api.Utils;
-
-namespace api.Interfaces
-{
-    public interface IWsChatService
-    {
-        bool AddConnection(int userId, WebSocket webSocket);
-        bool RemoveConnection(int userId);
-        Task HandleWebSocketCommunicationAsync(int userId);
-    }
-
-}
-
 
 namespace api.Services
 {

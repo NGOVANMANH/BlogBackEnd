@@ -1,5 +1,4 @@
 using api.Data;
-using api.DTOs;
 using api.Interfaces;
 using api.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -8,21 +7,6 @@ using api.Exceptions;
 using api.DTOs.Auth;
 using api.DTOs.User;
 using api.Mappers;
-
-namespace api.Interfaces
-{
-    public interface IUserRepository
-    {
-        Task<User> LoginUserAsync(LoginRequest loginRequest);
-        Task<User> RegisterUserAsync(RegistrationRequest registrationRequest);
-        Task<User> VerifyUserAsync(string email);
-        Task<User> UpdateUserAsync(int id, UpdateUserDTO updateUserDTO);
-        Task<User> CreateUserAsync(UserDTO user);
-        Task<User?> FindUserByIdAsync(int id);
-        Task<User?> FindUserByEmailAsync(string email);
-        Task<User?> FindUserByUsernameAsync(string username);
-    }
-}
 
 namespace api.Repositories
 {

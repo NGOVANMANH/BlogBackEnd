@@ -4,15 +4,6 @@ using api.Interfaces;
 using api.Entities;
 using api.Utils;
 
-namespace api.Interfaces
-{
-    public interface IEmailService
-    {
-        Task SendVerificationAsync(string toEmail, string token);
-        Task SendOtpAsync(string toEmail, string OTP);
-    }
-}
-
 namespace api.Services
 {
     public class EmailService : IEmailService

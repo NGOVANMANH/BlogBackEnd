@@ -6,18 +6,6 @@ using api.Exceptions;
 using api.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 
-namespace api.Interfaces
-{
-    public interface ITokenService
-    {
-        public string GenerateAccessToken(UserDTO user);
-        public Task<string> GenerateRefreshTokenAsync(int userId);
-        public Task<UserDTO> VerifyRefreshTokenAsync(string token);
-        public string GenerateVerificationToken(string userEmail);
-        public string VerifyVerificationToken(string token);
-    }
-}
-
 namespace api.Services
 {
     public class TokenService : ITokenService
