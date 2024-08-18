@@ -1,47 +1,114 @@
 using System.Net.WebSockets;
 using System.Security.Claims;
-using api.Data;
-using api.Services;
+using api.DTOs.ApiResponse;
+using api.DTOs.Chat;
+using api.Extensions.ModelState;
+using api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace api.Controllers;
 
 [ApiController]
-[Route("ws/[controller]")]
+[Route("api/[controller]")]
 public class ChatController : ControllerBase
 {
-    private readonly WsHandler _webSocketHandler;
-    private readonly MongoContext _mogoContext;
+    private readonly IWsChatService _wsChatService;
+    private readonly IChatService _chatService;
+    private readonly ILogger<ChatController> _logger;
 
-    public ChatController(WsHandler webSocketHandler, MongoContext mogoContext)
+    public ChatController(ILogger<ChatController> logger, IWsChatService wsChatService, IChatService chatService)
     {
-        _webSocketHandler = webSocketHandler;
-        _mogoContext = mogoContext;
+        _wsChatService = wsChatService;
+        _chatService = chatService;
+        _logger = logger;
     }
 
-    [HttpGet]
-    // [Authorize]
-    public async Task Get()
+    [HttpGet("/ws")]
+    [Authorize]
+    public async Task<IActionResult> WebSocketEndpoint()
     {
-        if (HttpContext.Items["WebSocket"] is WebSocket webSocket)
+        if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
-
-            if (userId == null)
+            WebSocket? webSocket = null;
+            webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            try
             {
-                HttpContext.Response.StatusCode = 401;
+                if (userId == null)
+                {
+                    await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "User not authenticated", CancellationToken.None);
+                    return Unauthorized(new FailResponse(401, "User not authenticated"));
+                }
+
+                var intUserId = int.Parse(userId);
+                _wsChatService.AddConnection(intUserId, webSocket);
+                await _wsChatService.HandleWebSocketCommunicationAsync(intUserId);
+            }
+            catch (Exception e)
+            {
+                // Log the exception since we can't modify the response headers
+                _logger.LogError(e, "An error occurred while handling the WebSocket connection.");
+
+                if (webSocket != null && webSocket.State == WebSocketState.Open)
+                {
+                    await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Internal Server Error", CancellationToken.None);
+                    _wsChatService.RemoveConnection(int.Parse(userId!));
+                }
+            }
+            finally
+            {
+                // Ensure the WebSocket is closed if it's still open
+                if (webSocket != null && webSocket.State != WebSocketState.Closed)
+                {
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by the server", CancellationToken.None);
+                    _wsChatService.RemoveConnection(int.Parse(userId!));
+                }
             }
 
-            var userIdToInt = int.Parse(userId!);
-
-            await _webSocketHandler.AddSocketAsync(userIdToInt, webSocket);
-
-            await _webSocketHandler.ReceiveMessageAsync(userIdToInt);
+            return new EmptyResult(); // Response is already started, returning EmptyResult
         }
         else
         {
-            HttpContext.Response.StatusCode = 400;
+            return BadRequest(new FailResponse(400, "WebSocket connection expected"));
         }
+    }
+
+    [HttpPost("room")]
+    [Authorize]
+    public async Task<IActionResult> CreateRoomAsync(RoomRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new FailResponse().GetInvalidResponse(errors: ModelState.GetErrors()));
+        }
+        try
+        {
+            var room = await _chatService.CreateRoomAsync(request.RoomName, request.MemberIds);
+
+            return Created("", new SuccessResponse(201, "Create room successful", room));
+        }
+        catch (System.Exception)
+        {
+            return StatusCode(500, new FailResponse().GetInternalServerError());
+        }
+    }
+    [HttpGet("room/{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetRoomAsync(string id)
+    {
+        if (id is null || !ObjectId.TryParse(id, out _))
+        {
+            return BadRequest(new FailResponse().GetInvalidResponse(errors: new
+            {
+                id = "Id invalid"
+            }));
+        }
+        var room = await _chatService.GetRoomByIdAsync(id);
+        return Ok(new SuccessResponse(200, "Get room successful", new
+        {
+            room
+        }));
     }
 }

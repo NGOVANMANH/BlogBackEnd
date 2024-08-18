@@ -1,7 +1,7 @@
 using api.Data;
 using api.Exceptions;
 using api.Interfaces;
-using api.MongoDB.Models;
+using api.Enities;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Interfaces

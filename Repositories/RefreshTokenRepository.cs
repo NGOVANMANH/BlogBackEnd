@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using api.Data;
 using api.Exceptions;
 using api.Interfaces;
-using api.Models;
+using api.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Interfaces

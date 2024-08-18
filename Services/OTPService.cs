@@ -1,6 +1,6 @@
 using api.Exceptions;
 using api.Interfaces;
-using api.MongoDB.Models;
+using api.Enities;
 using api.Utils;
 
 namespace api.Interfaces
@@ -8,7 +8,7 @@ namespace api.Interfaces
     public interface IOTPService
     {
         Task<string> GenerateOtpAsync(string email);
-        Task<OTPManager> VerifyOtpAsync(string email, string OTP);
+        Task<OTPManager?> VerifyOtpAsync(string email, string OTP);
     }
 }
 
@@ -58,13 +58,18 @@ namespace api.Services
             }
         }
 
-        public async Task<OTPManager> VerifyOtpAsync(string email, string OTP)
+        public async Task<OTPManager?> VerifyOtpAsync(string email, string OTP)
         {
             var existingOtp = await _otpRepository.FindOtpByEmailAsync(email);
 
             if (existingOtp.ExpiredAt < DateTime.UtcNow)
             {
-                // OTP expired;
+                throw new ExpiredException("OTP is expired");
+            }
+
+            if (existingOtp.OTP != OTP)
+            {
+                return null;
             }
 
             return existingOtp;

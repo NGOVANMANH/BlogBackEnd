@@ -1,6 +1,6 @@
 using MongoDB.Bson;
 
-namespace api.MongoDB.Models;
+namespace api.Enities;
 
 public class OTPManager
 {

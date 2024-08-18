@@ -1,7 +1,6 @@
 using System.Text;
 using api.Data;
 using api.Interfaces;
-using api.Middlewares;
 using api.Repositories;
 using api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -85,18 +84,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Add dependencies lifecycle
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IBlogService, BlogService>();
-builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 
+builder.Services.AddSingleton<IWsChatService, WsChatService>();
 
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IOTPService, OTPService>();
 builder.Services.AddTransient<IOTPRepository, OTPRepository>();
-
-builder.Services.AddSingleton<WsHandler>();
 
 // App building
 var app = builder.Build();
@@ -114,8 +113,6 @@ app.UseWebSockets(new WebSocketOptions
 {
     KeepAliveInterval = TimeSpan.FromSeconds(120)
 });
-
-app.UseMiddleware<WebSocketMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

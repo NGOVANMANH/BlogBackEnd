@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using api.DTOs.User;
 using api.DTOs.Auth;
 using api.Interfaces;
-using api.Models;
+using api.Entities;
 using api.DTOs;
 using api.Mappers;
 
@@ -50,7 +50,7 @@ namespace api.Services
                     Id = user.Id,
                     Username = user.Username,
                     Email = user.Email,
-                    Birthdate = user.Birthdate,
+                    Birthday = user.Birthday,
                     FirstName = user.FirstName!,
                     LastName = user.LastName!
                 };

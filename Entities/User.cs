@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace api.Models;
+namespace api.Entities;
 
 public class User
 {
@@ -18,7 +18,7 @@ public class User
     [MaxLength(250, ErrorMessage = "Password is too long")]
     public string Password { get; set; } = "";
     [DataType(DataType.Date)]
-    public DateTime? Birthdate { get; set; }
+    public DateTime? Birthday { get; set; }
     [MaxLength(100, ErrorMessage = "First name is too long")]
     public string? FirstName { get; set; }
     [MaxLength(100, ErrorMessage = "Last name is too long")]

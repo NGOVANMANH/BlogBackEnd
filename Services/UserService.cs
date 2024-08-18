@@ -11,7 +11,7 @@ namespace api.Interfaces
         Task<UserDTO?> RegisterUserAsync(RegistrationRequest user);
         Task<UserDTO?> LoginUserAsync(LoginRequest login);
         Task<UserDTO> VerifyUser(string email);
-        Task<UserDTO> ChangePasswordByEmailAsync(string email, string newPassword);
+        Task<UserDTO?> ChangePasswordByEmailAsync(string email, string newPassword);
     }
 }
 
@@ -27,9 +27,11 @@ namespace api.Services
             _userRepository = userRepository;
         }
 
-        public async Task<UserDTO> ChangePasswordByEmailAsync(string email, string newPassword)
+        public async Task<UserDTO?> ChangePasswordByEmailAsync(string email, string newPassword)
         {
             var existingUser = await _userRepository.FindUserByEmailAsync(email);
+
+            if (existingUser is null) return null;
 
             existingUser.Password = BcryptUtil.HashPassword(newPassword);
 
@@ -53,7 +55,7 @@ namespace api.Services
                     Id = user.Id,
                     Username = user.Username,
                     Email = user.Email,
-                    Birthdate = user.Birthdate!,
+                    Birthday = user.Birthday!,
                     FirstName = user.FirstName!,
                     LastName = user.LastName!
                 };
@@ -74,7 +76,7 @@ namespace api.Services
                     Id = returnedUser.Id,
                     Username = returnedUser.Username,
                     Email = returnedUser.Email,
-                    Birthdate = returnedUser.Birthdate,
+                    Birthday = returnedUser.Birthday,
                     FirstName = returnedUser.FirstName!,
                     LastName = returnedUser.LastName!
                 };

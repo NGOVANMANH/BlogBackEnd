@@ -1,7 +1,7 @@
 using api.Data;
 using api.DTOs;
 using api.Interfaces;
-using api.Models;
+using api.Entities;
 using Microsoft.EntityFrameworkCore;
 using api.Utils;
 using api.Exceptions;
@@ -18,9 +18,9 @@ namespace api.Interfaces
         Task<User> VerifyUserAsync(string email);
         Task<User> UpdateUserAsync(int id, UpdateUserDTO updateUserDTO);
         Task<User> CreateUserAsync(UserDTO user);
-        Task<User> FindUserByIdAsync(int id);
-        Task<User> FindUserByEmailAsync(string email);
-        Task<User> FindUserByUsernameAsync(string username);
+        Task<User?> FindUserByIdAsync(int id);
+        Task<User?> FindUserByEmailAsync(string email);
+        Task<User?> FindUserByUsernameAsync(string username);
     }
 }
 
@@ -66,38 +66,23 @@ namespace api.Repositories
             }
         }
 
-        public async Task<User> FindUserByEmailAsync(string email)
+        public async Task<User?> FindUserByEmailAsync(string email)
         {
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-            if (existingUser is null)
-            {
-                throw new NotFoundException();
-            }
-
             return existingUser;
         }
 
-        public async Task<User> FindUserByIdAsync(int id)
+        public async Task<User?> FindUserByIdAsync(int id)
         {
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
 
-            if (existingUser is null)
-            {
-                throw new NotFoundException();
-            }
-
             return existingUser;
         }
 
-        public async Task<User> FindUserByUsernameAsync(string username)
+        public async Task<User?> FindUserByUsernameAsync(string username)
         {
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-
-            if (existingUser is null)
-            {
-                throw new NotFoundException();
-            }
 
             return existingUser;
         }
@@ -126,7 +111,7 @@ namespace api.Repositories
                 Password = hashedPassword,
                 FirstName = registrationRequest.FirstName!,
                 LastName = registrationRequest.LastName!,
-                Birthdate = registrationRequest.Birthdate,
+                Birthday = registrationRequest.Birthdate,
             };
 
             var existUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email || u.Username == user.Username);
@@ -154,8 +139,11 @@ namespace api.Repositories
             try
             {
                 var existingUser = await FindUserByIdAsync(id);
+
+                if (existingUser is null) throw new NotFoundException("User not found");
+
                 existingUser.Username = updateUserDTO.Username is null ? existingUser.Username : updateUserDTO.Username;
-                existingUser.Birthdate = updateUserDTO.Birthdate is null ? existingUser.Birthdate : updateUserDTO.Birthdate;
+                existingUser.Birthday = updateUserDTO.Birthdate is null ? existingUser.Birthday : updateUserDTO.Birthdate;
                 existingUser.FirstName = updateUserDTO.FirstName is null ? existingUser.FirstName : updateUserDTO.FirstName;
                 existingUser.LastName = updateUserDTO.LastName is null ? existingUser.LastName : updateUserDTO.LastName;
                 existingUser.Password = updateUserDTO.Password is null ? existingUser.Password : updateUserDTO.Password;

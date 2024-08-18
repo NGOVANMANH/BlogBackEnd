@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Mail;
 using api.Interfaces;
-using api.Models;
+using api.Entities;
 using api.Utils;
 
 namespace api.Interfaces

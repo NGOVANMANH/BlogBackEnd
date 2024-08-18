@@ -87,7 +87,7 @@ namespace api.Services
                     Id = user.Id,
                     Username = user.Username,
                     Email = user.Email,
-                    Birthdate = user.Birthdate,
+                    Birthday = user.Birthday,
                     FirstName = user.FirstName!,
                     LastName = user.LastName!
                 };

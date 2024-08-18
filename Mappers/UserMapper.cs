@@ -1,6 +1,6 @@
 using api.DTOs.Auth;
 using api.DTOs.User;
-using api.Models;
+using api.Entities;
 
 namespace api.Mappers;
 
@@ -13,7 +13,7 @@ public static class UserMapper
             Id = user.Id,
             Email = user.Email,
             Username = user.Username,
-            Birthdate = user.Birthdate,
+            Birthday = user.Birthday,
             FirstName = user.FirstName!,
             LastName = user.LastName!,
             IsVerified = user.IsVerified
@@ -25,7 +25,7 @@ public static class UserMapper
         {
             Email = req.Email,
             Username = req.Username,
-            Birthdate = req.Birthdate,
+            Birthday = req.Birthdate,
             FirstName = req.FirstName!,
             LastName = req.LastName!,
         };
@@ -36,7 +36,7 @@ public static class UserMapper
         {
             Email = userDTO.Email,
             Username = userDTO.Username,
-            Birthdate = userDTO.Birthdate,
+            Birthday = userDTO.Birthday,
             FirstName = userDTO.FirstName,
             LastName = userDTO.LastName
         };

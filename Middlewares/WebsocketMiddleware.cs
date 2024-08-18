@@ -1,5 +1,4 @@
 using System.Text.Json;
-using api.DTOs;
 using api.DTOs.ApiResponse;
 
 namespace api.Middlewares;

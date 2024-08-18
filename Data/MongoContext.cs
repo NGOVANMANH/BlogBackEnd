@@ -1,4 +1,4 @@
-using api.MongoDB.Models;
+using api.Enities;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.EntityFrameworkCore.Extensions;
 
@@ -11,10 +11,10 @@ public class MongoContext : DbContext
 
     public DbSet<Message> Messages { get; init; }
     public DbSet<OTPManager> OTPManagers { get; init; }
+    public DbSet<Room> Rooms { get; init; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<Message>().ToCollection("messages");
-        modelBuilder.Entity<OTPManager>().ToCollection("OTPManagers");
+        modelBuilder.Entity<Room>().HasIndex(r => r.CreatedAt);
     }
 }

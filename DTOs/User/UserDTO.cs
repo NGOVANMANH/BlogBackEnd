@@ -8,7 +8,7 @@ public class UserDTO
     public string Username { get; set; } = null!;
     public string Email { get; set; } = null!;
     [DataType(DataType.Date)]
-    public DateTime? Birthdate { get; set; }
+    public DateTime? Birthday { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public bool IsVerified { get; set; }

@@ -1,5 +1,6 @@
 using api.DTOs.ApiResponse;
 using api.DTOs.Email;
+using api.Exceptions;
 using api.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;

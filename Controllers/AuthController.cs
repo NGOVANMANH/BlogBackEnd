@@ -204,11 +204,32 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new FailResponse().GetInvalidResponse(errors: ModelState.GetErrors()));
         }
+        try
+        {
 
-        await _oTPService.VerifyOtpAsync(request.Email, request.OTP);
+            var otp = await _oTPService.VerifyOtpAsync(request.Email, request.OTP);
 
-        await _userService.ChangePasswordByEmailAsync(request.Email, request.NewPassword);
+            if (otp is null)
+            {
+                return BadRequest(new FailResponse(400, "OTP does not match"));
+            }
 
-        return Ok(new SuccessResponse(200, "Password reset successfully"));
+            var updatedUser = await _userService.ChangePasswordByEmailAsync(request.Email, request.NewPassword);
+
+            if (updatedUser is null)
+            {
+                return Unauthorized(new FailResponse(401, "The email has not been registered before"));
+            }
+
+            return Ok(new SuccessResponse(200, "Password reset successfully"));
+        }
+        catch (ExpiredException)
+        {
+            return BadRequest(new FailResponse(400, "OTP is expired, please resend otp"));
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new FailResponse().GetInternalServerError());
+        }
     }
 }
