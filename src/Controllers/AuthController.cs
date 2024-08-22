@@ -197,7 +197,7 @@ public class AuthController : ControllerBase
             return Content(HtmlUtil.GetVerificationResultPage(), "text/html");
         }
     }
-    [HttpPut("forgot-password")]
+    [HttpPatch("forgot-password")]
     public async Task<IActionResult> ForgetPassword(ForgotPasswordRequest request)
     {
         if (!ModelState.IsValid)

@@ -5,7 +5,7 @@ namespace api.Mappers;
 
 public static class BlogMapper
 {
-    public static BlogDTO ToDTO(Blog blog)
+    public static BlogDTO ToDTO(this Blog blog)
     {
         return new BlogDTO
         {
@@ -17,7 +17,7 @@ public static class BlogMapper
             Title = blog.Title,
         };
     }
-    public static BlogDTO ToDTO(CreateBlogRequest blog)
+    public static BlogDTO ToDTO(this CreateBlogRequest blog)
     {
         return new BlogDTO
         {
@@ -26,7 +26,7 @@ public static class BlogMapper
             Title = blog.Title,
         };
     }
-    public static UpdateBlogDTO ToUpdateDTO(UpdateBlogRequest blog)
+    public static UpdateBlogDTO ToUpdateDTO(this UpdateBlogRequest blog)
     {
         return new UpdateBlogDTO
         {
@@ -35,7 +35,7 @@ public static class BlogMapper
             Title = blog.Title,
         };
     }
-    public static UpdateBlogDTO ToUpdateDTO(CreateBlogRequest blog)
+    public static UpdateBlogDTO ToUpdateDTO(this CreateBlogRequest blog)
     {
         return new UpdateBlogDTO
         {

@@ -89,26 +89,33 @@ public class ChatController : ControllerBase
 
             return Created("", new SuccessResponse(201, "Create room successful", room));
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return StatusCode(500, new FailResponse().GetInternalServerError());
         }
     }
     [HttpGet("room/{id}")]
     [Authorize]
-    public async Task<IActionResult> GetRoomAsync(string id)
+    public async Task<IActionResult> GetRoomAsync(string id, [FromQuery] string? type = null)
     {
+        const string MESSAGE_ID_ONLY = "less";
+
         if (id is null || !ObjectId.TryParse(id, out _))
         {
             return BadRequest(new FailResponse().GetInvalidResponse(error: new
             {
-                id = "Id invalid"
+                id = "Id invalid."
             }));
         }
-        var room = await _chatService.GetRoomByIdAsync(id);
-        return Ok(new SuccessResponse(200, "Get room successful", new
+        if (type == MESSAGE_ID_ONLY)
         {
-            room
-        }));
+            var room = await _chatService.GetRoomLessByIdAsync(id);
+            return Ok(new SuccessResponse(200, "Get room successfully.", room));
+        }
+        else
+        {
+            var room = await _chatService.GetRoomByIdAsync(id);
+            return Ok(new SuccessResponse(200, "Get room successfully.", room));
+        }
     }
 }

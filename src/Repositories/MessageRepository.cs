@@ -63,7 +63,12 @@ namespace api.Repositories
 
             if (ObjectId.TryParse(roomId, out var roomObjectId))
             {
-                var messages = await _mongoContext.Messages.Where(m => m.RoomId == roomObjectId).ToListAsync();
+                var messages = await _mongoContext.Messages
+                    .Where(m => m.RoomId == roomObjectId)
+                    .OrderByDescending(m => m.SentAt)
+                    .Take(20)
+                    .OrderBy(m => m.SentAt)
+                    .ToListAsync();
                 return messages;
             }
             else

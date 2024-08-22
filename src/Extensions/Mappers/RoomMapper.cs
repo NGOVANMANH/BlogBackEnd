@@ -27,4 +27,15 @@ public static class RoomMapper
             Messages = chatRoomDTO.Messages.Select(m => ObjectId.Parse(m.Id)).ToList(),
         };
     }
+    public static RoomLessDTO ToDTO(this Room room)
+    {
+        return new RoomLessDTO
+        {
+            Id = room._id.ToString(),
+            CreatedAt = room.CreatedAt,
+            Members = room.Members,
+            Messages = room.Messages.Select(m => m.ToString()).ToList(),
+            RoomName = room.RoomName,
+        };
+    }
 }

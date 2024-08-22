@@ -1,6 +1,7 @@
 using api.DTOs.ApiResponse;
 using api.DTOs.Blog;
 using api.Interfaces;
+using api.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ public class BlogController : ControllerBase
     {
         try
         {
-            var createdBlog = await _blogService.CreateBlogAsync(Mappers.BlogMapper.ToDTO(request));
+            var createdBlog = await _blogService.CreateBlogAsync(request.ToDTO());
             return Created("", new SuccessResponse(201, "Create blog successfully.", createdBlog));
         }
         catch (DbUpdateException ex)
@@ -87,7 +88,7 @@ public class BlogController : ControllerBase
     {
         try
         {
-            var updatedBlog = await _blogService.UpdateBlogAsync(id, Mappers.BlogMapper.ToUpdateDTO(requestBody));
+            var updatedBlog = await _blogService.UpdateBlogAsync(id, requestBody.ToUpdateDTO());
             if (updatedBlog is null)
             {
                 return NotFound(new FailResponse(404, "Blog not found."));
@@ -104,7 +105,7 @@ public class BlogController : ControllerBase
     {
         try
         {
-            var updatedBlog = await _blogService.UpdateBlogAsync(id, Mappers.BlogMapper.ToUpdateDTO(requestBody));
+            var updatedBlog = await _blogService.UpdateBlogAsync(id, requestBody.ToUpdateDTO());
             if (updatedBlog is null)
             {
                 return NotFound(new FailResponse(404, "Blog not found."));

@@ -59,9 +59,17 @@ namespace api.Services
         {
             var room = await _roomRepository.GetChatRoomByIdAsync(id);
             if (room is null) return null;
+
             var messages = await _messageRepository.GetMessagesByRoomIdAsync(room._id.ToString());
             var messagesDTO = messages.Select(m => Mappers.MessageMapper.ToDTO(m)).ToList();
             return Mappers.RoomMapper.ToDTO(room, messagesDTO);
+        }
+
+        public async Task<RoomLessDTO?> GetRoomLessByIdAsync(string id)
+        {
+            var room = await _roomRepository.GetChatRoomByIdAsync(id);
+            if (room is null) return null;
+            return room.ToDTO();
         }
     }
 }
