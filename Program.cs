@@ -3,6 +3,7 @@ using api.Data;
 using api.Interfaces;
 using api.Repositories;
 using api.Services;
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -112,6 +113,11 @@ builder.Services.AddSingleton<IWsChatService, WsChatService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IOTPService, OTPService>();
 builder.Services.AddTransient<IOTPRepository, OTPRepository>();
+
+var cloudinary = new Cloudinary(builder.Configuration["Cloudinary:CLOUDINARY_URL"]);
+cloudinary.Api.Secure = true;
+builder.Services.AddSingleton(cloudinary);
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 // App building
 var app = builder.Build();

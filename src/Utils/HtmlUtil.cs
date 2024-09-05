@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace api.Utils;
 
 public static class HtmlUtil

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace api.Controllers;
 
 [ApiController]
-[Route("apt/[controller]s")]
+[Route("api/[controller]s")]
 public class CommentController : ControllerBase
 {
     [HttpPost]
