@@ -13,7 +13,7 @@ namespace api.Services
             _cloudinary = cloudinary;
         }
 
-        public async Task<string> UploadImageFile(IFormFile file)
+        public async Task<ImageUploadResult> UploadImageFile(IFormFile file)
         {
             var uploadParams = new ImageUploadParams()
             {
@@ -24,13 +24,13 @@ namespace api.Services
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
             if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                return uploadResult.Url.ToString();
+                return uploadResult;
             }
 
-            throw new System.Exception("Error uploading image to Cloudinary.");
+            throw new Exception("Error uploading image to Cloudinary.");
         }
 
-        public async Task<string> UploadVideoFile(IFormFile file)
+        public async Task<VideoUploadResult> UploadVideoFile(IFormFile file)
         {
             var uploadParams = new VideoUploadParams()
             {
@@ -41,72 +41,65 @@ namespace api.Services
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
             if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                return uploadResult.Url.ToString();
+                return uploadResult;
             }
 
-            throw new System.Exception("Error uploading video to Cloudinary.");
+            throw new Exception("Error uploading video to Cloudinary.");
         }
 
-        public async Task<bool> DeleteResource(string publicId, string resourceType)
+        public async Task<bool> DeleteResource(string publicId, ResourceType resourceType)
         {
-            // var deletionParams = new DeletionParams(publicId)
-            // {
-            //     ResourceType = resourceType
-            // };
+            var deletionParams = new DeletionParams(publicId)
+            {
+                ResourceType = resourceType
+            };
 
-            // var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
-            // return deletionResult.StatusCode == System.Net.HttpStatusCode.OK;
-            return false;
+            var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
+            return deletionResult.StatusCode == System.Net.HttpStatusCode.OK;
         }
 
         public async Task<string> GetImageDetails(string publicId)
         {
-            // var getResourceParams = new GetResourceParams(publicId)
-            // {
-            //     ResourceType = "image"
-            // };
+            var getResourceParams = new GetResourceParams(publicId)
+            {
+                ResourceType = ResourceType.Image
+            };
 
-            // var resourceResult = await _cloudinary.GetResourceAsync(getResourceParams);
-            // return resourceResult.JsonObj.ToString();
-            return string.Empty;
+            var resourceResult = await _cloudinary.GetResourceAsync(getResourceParams);
+            return resourceResult.JsonObj.ToString();
         }
 
         public async Task<string> GetVideoDetails(string publicId)
         {
-            // var getResourceParams = new GetResourceParams(publicId)
-            // {
-            //     ResourceType = "video"
-            // };
+            var getResourceParams = new GetResourceParams(publicId)
+            {
+                ResourceType = ResourceType.Video
+            };
 
-            // var resourceResult = await _cloudinary.GetResourceAsync(getResourceParams);
-            // return resourceResult.JsonObj.ToString();
-            return string.Empty;
+            var resourceResult = await _cloudinary.GetResourceAsync(getResourceParams);
+            return resourceResult.JsonObj.ToString();
         }
 
-        public async Task<string> UpdateImageTransformation(string publicId, string transformation)
-        {
-            // var updateParams = new UpdateParams(publicId)
-            // {
-            //     Transformation = transformation,
-            //     ResourceType = "image"
-            // };
+        // public async Task<string> UpdateImageTransformation(string publicId, string transformation)
+        // {
+        //     var updateParams = new UpdateParams(publicId)
+        //     {
+        //         ResourceType = ResourceType.Image
+        //     };
 
-            // var updateResult = await _cloudinary.UpdateResourceAsync(updateParams);
-            // return updateResult.JsonObj.ToString();
-            return string.Empty;
-        }
+        //     var updateResult = await _cloudinary.UpdateResourceAsync(updateParams);
+        //     return updateResult.JsonObj.ToString();
+        // }
 
-        public async Task<string> UpdateVideoTransformation(string publicId, string transformation)
-        {
-            // var updateParams = new UpdateParams(publicId)
-            // {
-            //     Transformation = transformation,
-            //     ResourceType = "video"
-            // };
+        // public async Task<string> UpdateVideoTransformation(string publicId, string transformation)
+        // {
+        //     var updateParams = new UpdateParams(publicId)
+        //     {
+        //         ResourceType = ResourceType.Video
+        //     };
 
-            // var updateResult = await _cloudinary.UpdateResourceAsync(updateParams);
-            // return updateResult.JsonObj.ToString();
-            return string.Empty;
-        }
+        //     var updateResult = await _cloudinary.UpdateResourceAsync(updateParams);
+        //     return updateResult.JsonObj.ToString();
+        // }
     }
 }
